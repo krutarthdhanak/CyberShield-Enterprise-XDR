@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberShield Enterprise Security Scanner</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body{
+            background:#0f172a;
+            color:white;
+        }
+
+        .navbar{
+            background:#111827;
+        }
+
+        .card{
+            border:none;
+            border-radius:15px;
+            box-shadow:0 0 15px rgba(0,0,0,.25);
+        }
+
+        .dashboard-card{
+            color:white;
+            text-align:center;
+        }
+
+        .dashboard-card h2{
+            font-weight:bold;
+        }
+
+        .section-card{
+            background:#1f2937;
+            color:white;
+            margin-top:25px;
+        }
+
+        table{
+            font-size:14px;
+        }
+
+        .badge-high{
+            background:#dc3545;
+        }
+
+        .badge-medium{
+            background:#ffc107;
+            color:black;
+        }
+
+        .badge-low{
+            background:#198754;
+        }
+
+        .container{
+            max-width:1450px;
+        }
+
+        .card{
+            transition:.3s ease;
+            border:1px solid rgba(255,255,255,.08);
+        }
+
+        .card:hover{
+            transform:translateY(-4px);
+            box-shadow:0 10px 25px rgba(0,255,255,.15);
+        }
+
+        .dashboard-card{
+            border-radius:18px;
+        }
+
+        .dashboard-card h6{
+            opacity:.85;
+            letter-spacing:1px;
+            text-transform:uppercase;
+        }
+
+        .dashboard-card h2{
+            font-size:2rem;
+        }
+
+        .section-card{
+            border-radius:18px;
+            background:#1b2433;
+        }
+
+        .btn{
+            border-radius:10px;
+            font-weight:600;
+        }
+
+        .btn-primary{
+            background:#2563eb;
+            border:none;
+        }
+
+        .btn-danger{
+            border:none;
+        }
+
+        .table{
+            margin-top:15px;
+        }
+
+        .table thead{
+            background:#111827;
+        }
+
+        .table tbody tr:hover{
+            background:#273449;
+        }
+
+        h3{
+            font-weight:700;
+            margin-bottom:20px;
+        }
+
+        footer{
+            color:#9ca3af;
+            font-size:14px;
+        }
+    
+
+.btn{
+border-radius:12px;
+font-weight:600;
+transition:.25s;
+}
+
+.btn:hover{
+transform:translateY(-2px);
+}
+
+
+
+
+body{
+background:linear-gradient(135deg,#0f172a,#111827,#1e293b);
+background-attachment:fixed;
+}
+
+.section-card{
+background:rgba(31,41,55,.82)!important;
+backdrop-filter:blur(14px);
+border:1px solid rgba(255,255,255,.08);
+}
+
+.table{
+border-radius:12px;
+overflow:hidden;
+}
+
+.table thead th{
+background:#111827!important;
+color:#38bdf8;
+border:none;
+}
+
+.table tbody td{
+vertical-align:middle;
+}
+
+.form-control{
+background:#0f172a;
+border:1px solid #334155;
+color:#fff;
+}
+
+.form-control:focus{
+background:#0f172a;
+color:#fff;
+border-color:#38bdf8;
+box-shadow:0 0 10px rgba(56,189,248,.35);
+}
+
+.spinner-border{
+display:none;
+}
+
+
+</style>
+
+</head>
+
+<body>
+
+{% if error %}
+<div class="container mt-3">
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+<strong>⚠ {{ error }}</strong>
+<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+</div>
+{% endif %}
+
+
+<nav class="navbar navbar-dark mb-4">
+    <div class="container">
+
+        <div>
+<span class="navbar-brand fs-2 fw-bold">
+🛡 CyberShield Enterprise XDR
+</span>
+
+<div style="font-size:13px;color:#9ca3af;margin-top:-6px;">
+Enterprise Endpoint Detection & Response Platform
+</div>
+</div>
+
+        <div>
+            <a href="/" class="btn btn-outline-light">Dashboard</a>
+            <a href="/history" class="btn btn-info">History</a>
+        </div>
+
+    </div>
+</nav>
+
+<div class="container">
+
+<div class="row g-3">
+
+<div class="col-md-3">
+<div class="card bg-primary dashboard-card">
+<div class="card-body">
+<div style="font-size:38px;">📊</div>
+<h6>TOTAL SCANS</h6>
+<h2 class="display-5 fw-bold">{{ total_scans|default(0) }}</h2>
+<small class="text-light">Completed Scans</small>
+</div>
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="card bg-success dashboard-card">
+<div class="card-body">
+<div style="font-size:38px;">🌐</div>
+<h6>OPEN PORTS</h6>
+<h2 class="display-5 fw-bold">{{ total_open_ports|default(0) }}</h2>
+<small class="text-light">Services Detected</small>
+</div>
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="card bg-danger dashboard-card">
+<div class="card-body">
+<div style="font-size:38px;">⚠️</div>
+<h6>HIGH RISK</h6>
+<h2 class="display-5 fw-bold">{{ high_risk|default(0) }}</h2>
+<small class="text-light">Critical Findings</small>
+</div>
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="card bg-warning dashboard-card">
+<div class="card-body">
+<div style="font-size:38px;">🛡️</div>
+<h6>SECURITY SCORE</h6>
+<h2 class="display-5 fw-bold">{{ security_score|default(95) }}%</h2>
+<small class="text-light">Overall Protection<br><small>Excellent Security</small></small>
+</div>
+</div>
+</div>
+
+</div>
+
+<div class="card section-card">
+
+<div class="card-body">
+
+<h3>🌐 Network Port Scanner</h3>
+
+<form method="POST" action="/scan">
+
+<div class="row">
+
+<div class="col-md-6 mb-3">
+<label>Target IP / Domain</label>
+<input
+type="text"
+class="form-control"
+name="target"
+required>
+</div>
+
+<div class="col-md-3 mb-3">
+<label>Start Port</label>
+<input
+type="number"
+class="form-control"
+name="start_port"
+value="1"
+required>
+</div>
+
+<div class="col-md-3 mb-3">
+<label>End Port</label>
+<input
+type="number"
+class="form-control"
+name="end_port"
+value="1024"
+required>
+</div>
+
+</div>
+
+<button class="btn btn-primary" onclick="document.getElementById('scanSpinner').style.display='inline-block'">
+🔍 Start Scan
+<span id="scanSpinner" class="spinner-border spinner-border-sm ms-2"></span>
+</button>
+
+<a href="/download_report"
+class="btn btn-danger">
+📄 Download PDF
+</a>
+
+</form>
+
+</div>
+
+</div><div class="card section-card">
+
+<div class="card-body">
+
+<h3>🔌 USB Malware Scanner</h3>
+
+{% if usb_connected %}
+
+<div class="alert alert-success" id="usbStatus">
+<b>USB Status:</b> Connected ({{ usb_mount }})
+</div>
+
+
+
+{% else %}
+
+<div class="alert alert-danger" id="usbStatus">
+USB Drive Not Connected
+</div>
+
+{% endif %}
+
+{% if usb_error %}
+<div class="alert alert-danger mt-3">
+{{ usb_error }}
+</div>
+{% endif %}
+
+</div>
+
+</div>
+
+<div class="card section-card">
+
+<div class="card-body">
+
+<h3>🛡 Enterprise XDR Status
+<span class="badge bg-success ms-2">
+🟢 LIVE
+</span>
+</h3>
+
+<div class="row">
+
+<div class="col-md-3">
+<div class="alert alert-success text-center">
+🖥️<br>
+<h6 class="mt-2 mb-1">Endpoint Security</h6>
+<b class="text-success">✔ Protected</b>
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="alert alert-primary text-center">
+🌐<br>
+<h6 class="mt-2 mb-1">Network Monitoring</h6>
+<b class="text-primary">✔ Active</b>
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="alert alert-warning text-center">
+🧠<br>
+<h6 class="mt-2 mb-1">Threat Intelligence</h6>
+<b class="text-warning">✔ Enabled</b>
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="alert alert-info text-center">
+🚨<br>
+<h6 class="mt-2 mb-1">Incident Response</h6>
+<b class="text-info">✔ Ready</b>
+</div>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="card section-card">
+
+<div class="card-body">
+
+<h3>📡 Live Activity</h3>
+
+<div class="table-responsive">
+
+<table class="table table-dark table-hover">
+
+<thead>
+<tr>
+<th>#</th>
+<th>Target</th>
+<th>Scan Type</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% if total_scans > 0 %}
+
+<tr>
+<td>1</td>
+<td>Network & USB Monitoring</td>
+<td><span class="badge bg-success">ACTIVE</span></td>
+</tr>
+
+<tr>
+<td>2</td>
+<td>Threat Detection</td>
+<td><span class="badge bg-primary">RUNNING</span></td>
+</tr>
+
+<tr>
+<td>3</td>
+<td>Real-Time Protection</td>
+<td><span class="badge bg-info">ENABLED</span></td>
+</tr>
+
+{% else %}
+
+<tr>
+<td colspan="3" class="text-center">
+No activity available
+</td>
+</tr>
+
+{% endif %}
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</div>
+
+{% if ports %}
+
+<div class="card section-card">
+
+<div class="card-body">
+
+<h3>🌐 Scan Results</h3>
+
+<p>
+
+<b>Target:</b> {{ target }}
+
+<br>
+
+<b>Type:</b> {{ target_type }}
+
+<br>
+
+<b>Port Range:</b> {{ start_port }} - {{ end_port }}
+
+</p>
+
+<div class="table-responsive">
+
+<table class="table table-dark table-striped table-bordered">
+
+<thead>
+
+<tr>
+
+<th>Port</th>
+
+<th>Service</th>
+
+<th>Banner</th>
+
+<th>Risk</th>
+
+<th>Recommendation</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+{% for port in ports %}
+
+<tr>
+
+<td>{{ port.port }}</td>
+
+<td>{{ port.service }}</td>
+
+<td>{{ port.banner }}</td>
+
+<td>
+
+{% if port.risk=="High" %}
+<span class="badge badge-high">HIGH</span>
+
+{% elif port.risk=="Medium" %}
+<span class="badge badge-medium">MEDIUM</span>
+
+{% else %}
+<span class="badge badge-low">LOW</span>
+{% endif %}
+
+</td>
+
+<td>{{ port.recommendation }}</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</div>
+
+{% endif %}{% if usb_results %}
+
+<div class="card section-card">
+
+<div class="card-body">
+
+<h3>💾 USB Scan Results</h3>
+
+<a href="/download_usb_report"
+class="btn btn-success mt-3">
+📥 Download Latest USB Report
+</a>
+
+
+<div class="table-responsive">
+
+<table class="table table-dark table-striped table-bordered">
+
+<thead>
+
+<tr>
+
+<th>File Name</th>
+<th>Extension</th>
+<th>Size</th>
+<th>Risk</th>
+<th>SHA-256</th>
+<th>Status</th>
+<th>Reason</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+{% for file in usb_results.results %}
+
+<tr>
+
+<td>{{ file.name }}</td>
+
+<td>{{ file.extension }}</td>
+
+<td>{{ file.size }}</td>
+
+<td>
+
+{% if file.risk=="HIGH" %}
+<span class="badge badge-high">HIGH</span>
+
+{% elif file.risk=="MEDIUM" %}
+<span class="badge badge-medium">MEDIUM</span>
+
+{% else %}
+<span class="badge badge-low">{{ file.risk }}</span>
+{% endif %}
+
+</td>
+
+<td style="font-size:12px;">
+{{ file.sha256 }}
+</td>
+
+<td>{{ file.status }}</td>
+
+<td>{{ file.reason }}</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</div>
+
+{% endif %}
+
+<hr class="mt-5">
+
+<footer class="text-center mt-5 mb-4" style="border-top:1px solid #374151;padding-top:20px;">
+
+<h5 class="text-info mb-2">
+🛡 CyberShield Enterprise XDR v2.0
+</h5>
+
+<p class="text-secondary mb-1">
+Enterprise Vulnerability Assessment & USB Threat Detection Platform
+</p>
+
+<p class="text-secondary mb-1">
+Network Scanner • USB Malware Scanner • Risk Assessment • PDF Reporting
+</p>
+
+<p class="text-light mb-1">
+Developed by <strong>Krutarth Dhanak</strong>
+</p>
+
+<small class="text-muted">
+© 2026 CyberShield Enterprise XDR | All Rights Reserved
+</small>
+
+</footer>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+
+
+
+
+<script>
+async function updateUSBStatus() {
+    try {
+        const res = await fetch("/status");
+        const data = await res.json();
+
+        const box = document.getElementById("usbStatus");
+        if (!box) return;
+
+        if (data.usb_connected) {
+            box.className = "alert alert-success";
+            box.innerHTML = "<b>USB Status:</b> Connected (" + data.usb_mount + ")";
+        } else {
+            box.className = "alert alert-danger";
+            box.innerHTML = "USB Drive Not Connected";
+        }
+    } catch(e) {
+        console.log("Status update failed");
+    }
+}
+
+
+function renderUSBReport(report){
+
+    if(!report || !report.results) return;
+
+    let old=document.getElementById("live-usb-report");
+
+    let html=`
+<div id="live-usb-report" class="card section-card mt-4">
+<div class="card-body">
+
+<h3>💾 USB Scan Results</h3>
+
+<a href="/download_usb_report"
+class="btn btn-success mt-3 mb-3">
+📥 Download Latest USB Report
+</a>
+
+<div class="table-responsive">
+
+<table class="table table-dark table-striped table-bordered">
+
+<thead>
+<tr>
+<th>File Name</th>
+<th>Extension</th>
+<th>Size</th>
+<th>Risk</th>
+<th>SHA-256</th>
+<th>Status</th>
+<th>Reason</th>
+</tr>
+</thead>
+
+<tbody>
+`;
+
+    report.results.forEach(f=>{
+
+        html+=`
+<tr>
+<td>${f.name}</td>
+<td>${f.extension}</td>
+<td>${f.size}</td>
+<td>${f.risk}</td>
+<td style="font-size:12px">${f.sha256}</td>
+<td>${f.status}</td>
+<td>${f.reason}</td>
+</tr>`;
+
+    });
+
+    html+=`
+</tbody>
+</table>
+</div>
+</div>
+</div>`;
+
+    if(old){
+        old.outerHTML=html;
+    }else{
+
+        const footer=document.querySelector("footer");
+
+        footer.insertAdjacentHTML("beforebegin",html);
+    }
+
+}
+
+const oldUpdateUSBStatus=updateUSBStatus;
+
+updateUSBStatus=async function(){
+
+    try{
+
+        const res=await fetch("/status");
+        const data=await res.json();
+
+        const box=document.getElementById("usbStatus");
+
+        if(box){
+
+            if(data.usb_connected){
+
+                box.className="alert alert-success";
+                box.innerHTML="<b>USB Status:</b> Connected ("+data.usb_mount+")";
+
+            }else{
+
+                box.className="alert alert-danger";
+                box.innerHTML="USB Drive Not Connected";
+
+            }
+
+        }
+
+        renderUSBReport(data.usb_results);
+
+    }catch(e){
+
+        console.log(e);
+
+    }
+
+}
+
+updateUSBStatus();
+setInterval(updateUSBStatus,1000);
+
+</script>
+
+</body>
+
+</html>
