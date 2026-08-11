@@ -12,7 +12,7 @@ import usb.monitor as monitor
 from usb.monitor import start_monitor
 
 app = Flask(__name__)
-app.secret_key = "cybershield_xdr"
+app.secret_key = os.urandom(24)
 
 initialize_database()
 
@@ -101,9 +101,13 @@ def scan():
     global last_ports, last_start_port, last_end_port
     global last_scan_time
 
-    target = request.form["target"]
-    start_port = int(request.form["start_port"])
-    end_port = int(request.form["end_port"])
+    target = request.form.get("target", "").strip()
+
+    try:
+        start_port = int(request.form.get("start_port", ""))
+        end_port = int(request.form.get("end_port", ""))
+    except (ValueError, TypeError):
+        return home("Port numbers must be valid numeric values.")
 
     valid, target_type = validate_target(target)
 
@@ -121,7 +125,8 @@ def scan():
     try:
         ports = scan_ports(target, start_port, end_port)
     except Exception as e:
-        return f"<h2>Scan Failed</h2><p>{e}</p>" 
+        print("Scan Error:", e)
+        return home("Please check your target and try again.") 
 
     last_target = target
     last_target_type = target_type
@@ -197,4 +202,4 @@ def history():
 
 if __name__ == "__main__":
     start_monitor()
-    app.run(debug=True, threaded=True, use_reloader=False)
+    app.run(debug=False, threaded=True, use_reloader=False)
