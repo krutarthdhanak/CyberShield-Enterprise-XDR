@@ -18,3 +18,8 @@ reports/
 # macOS
 .DS_Store
 
+
+# Local backup files
+*.backup
+*.backup2
+*.before_scan_patch
