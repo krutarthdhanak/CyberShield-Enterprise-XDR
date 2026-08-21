@@ -340,12 +340,35 @@ def generate_usb_report(usb_name, results):
     y = draw_header(c, "USB Malware Scan Report")
 
     total = len(results)
+
+    # Count findings by severity
     suspicious = sum(
         1 for r in results
-        if r.get("status", "").upper() != "CLEAN"
+        if r.get("status", "").upper() == "SUSPICIOUS"
     )
 
-    score = max(0, 100 - suspicious * 10)
+    infected = sum(
+        1 for r in results
+        if r.get("status", "").upper() == "INFECTED"
+    )
+
+    # Severity-weighted USB security score
+    # Suspicious files have a moderate impact.
+    # Confirmed infected files have a major impact.
+    if total > 0:
+        threat_weight = (
+            (suspicious * 5) +
+            (infected * 12)
+        )
+
+        max_possible_weight = total * 12
+        threat_percentage = (
+            threat_weight / max_possible_weight
+        ) * 100
+
+        score = round(max(0, 100 - threat_percentage))
+    else:
+        score = 100
 
     c.setFont("Helvetica-Bold", 15)
     c.drawString(40, y, "Executive Summary")
@@ -361,6 +384,20 @@ def generate_usb_report(usb_name, results):
     y -= 18
 
     c.drawString(45, y, f"Suspicious Files : {suspicious}")
+    y -= 18
+
+    c.drawString(45, y, f"Infected Files : {infected}")
+    y -= 18
+
+    # Determine the overall USB threat level
+    if infected > 0:
+        overall_risk = "CRITICAL"
+    elif suspicious > 0:
+        overall_risk = "HIGH"
+    else:
+        overall_risk = "LOW"
+
+    c.drawString(45, y, f"Overall Risk : {overall_risk}")
     y -= 18
 
     c.drawString(45, y, f"Security Score : {score}%")

@@ -31,6 +31,23 @@ def initialize_database():
         "CREATE INDEX IF NOT EXISTS idx_scan_date ON scan_history(scan_date)"
     )
 
+    # XDR security event log
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS xdr_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_type TEXT NOT NULL,
+            severity TEXT DEFAULT 'INFO',
+            source TEXT,
+            message TEXT,
+            event_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS idx_xdr_event_time "
+        "ON xdr_events(event_time)"
+    )
+
     conn.commit()
     conn.close()
 
@@ -117,6 +134,59 @@ def save_scan(target, target_type, ports):
     Compatibility wrapper for app.py
     """
     save_network_scan(target, target_type, ports)
+
+
+def log_xdr_event(event_type, severity="INFO", source=None, message=None):
+    """
+    Save an XDR security event to the database.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO xdr_events(
+            event_type,
+            severity,
+            source,
+            message
+        )
+        VALUES (?, ?, ?, ?)
+    """, (
+        event_type,
+        severity,
+        source,
+        message
+    ))
+
+    conn.commit()
+    conn.close()
+
+
+def get_xdr_events(limit=50):
+    """
+    Return the most recent XDR events.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT
+            id,
+            event_type,
+            severity,
+            source,
+            message,
+            event_time
+        FROM xdr_events
+        ORDER BY event_time DESC, id DESC
+        LIMIT ?
+    """, (limit,))
+
+    rows = cursor.fetchall()
+
+    conn.close()
+
+    return rows
 
 
 def get_history():

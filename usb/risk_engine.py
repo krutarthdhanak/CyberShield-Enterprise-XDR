@@ -1,18 +1,26 @@
 def calculate_risk(results):
     """
-    Calculate USB scan risk based on scanned files.
+    Calculate the overall USB scan risk.
+
+    Priority:
+    INFECTED  -> CRITICAL
+    SUSPICIOUS -> HIGH
+    CLEAN      -> LOW
     """
 
-    risk = "LOW"
+    has_suspicious = False
 
     for item in results:
         status = str(item.get("status", "")).upper()
         reason = str(item.get("reason", "")).upper()
 
         if status == "INFECTED":
-            return "HIGH"
+            return "CRITICAL"
 
-        if "SUSPICIOUS" in reason or status == "SUSPICIOUS":
-            risk = "MEDIUM"
+        if status == "SUSPICIOUS" or "SUSPICIOUS" in reason:
+            has_suspicious = True
 
-    return risk
+    if has_suspicious:
+        return "HIGH"
+
+    return "LOW"

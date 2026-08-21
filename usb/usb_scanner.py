@@ -23,12 +23,20 @@ def scan_usb(folder="test_usb"):
                 file_hash
             )
 
+            # Calculate final risk from the malware detection result
+            if status == "INFECTED":
+                final_risk = "CRITICAL"
+            elif status == "SUSPICIOUS":
+                final_risk = "HIGH"
+            else:
+                final_risk = "LOW"
+
             results.append({
                 "name": file["name"],
                 "path": file["path"],
                 "size": file["size"],
                 "extension": file["extension"],
-                "risk": file["risk"],
+                "risk": final_risk,
                 "sha256": file_hash,
                 "status": status,
                 "reason": reason

@@ -7,7 +7,7 @@ import time
 from scanner.validator import validate_target
 from scanner.port_scanner import scan_ports
 from scanner.report import generate_report
-from scanner.database import initialize_database, save_scan, get_history
+from scanner.database import initialize_database, save_scan, get_history, log_xdr_event, get_xdr_events
 import usb.monitor as monitor
 from usb.monitor import start_monitor
 
@@ -49,6 +49,7 @@ last_ports = []
 last_start_port = None
 last_end_port = None
 last_scan_time = "Never"
+scan_completed = False
 
 
 
@@ -58,6 +59,7 @@ def home(error=None):
     usb_path = monitor.last_usb if monitor.usb_connected else None
 
     scans = get_history()
+    xdr_events = get_xdr_events(15)
 
     total_scans = len(scans)
 
@@ -91,6 +93,8 @@ def home(error=None):
         start_port=last_start_port,
         end_port=last_end_port,
         last_scan_time=last_scan_time,
+        scan_completed=scan_completed,
+        xdr_events=xdr_events,
         error=error,
     )
 
@@ -99,7 +103,7 @@ def home(error=None):
 def scan():
     global last_target, last_target_type
     global last_ports, last_start_port, last_end_port
-    global last_scan_time
+    global last_scan_time, scan_completed
 
     target = request.form.get("target", "").strip()
 
@@ -122,10 +126,25 @@ def scan():
 
     start_time = time.time()
 
+    log_xdr_event(
+        "NETWORK_SCAN_STARTED",
+        "INFO",
+        "Network Scanner",
+        f"Started scan of {target} ports {start_port}-{end_port}"
+    )
+
     try:
         ports = scan_ports(target, start_port, end_port)
     except Exception as e:
         print("Scan Error:", e)
+
+        log_xdr_event(
+            "NETWORK_SCAN_FAILED",
+            "HIGH",
+            "Network Scanner",
+            f"Network scan failed for {target}"
+        )
+
         return home("Please check your target and try again.") 
 
     last_target = target
@@ -133,6 +152,7 @@ def scan():
     last_ports = ports
     last_start_port = start_port
     last_end_port = end_port
+    scan_completed = True
 
     from datetime import datetime
     last_scan_time = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
@@ -141,6 +161,13 @@ def scan():
     scan_duration = round(time.time()-start_time,2)
 
     print(f"Scan completed in {scan_duration} seconds")
+
+    log_xdr_event(
+        "NETWORK_SCAN_COMPLETED",
+        "INFO",
+        "Network Scanner",
+        f"Completed scan of {target}: {len(ports)} open ports found in {scan_duration} seconds"
+    )
 
     save_scan(target, target_type, ports)
 
@@ -162,7 +189,7 @@ def status():
 @app.route("/download_report")
 def download_report():
 
-    if last_target is None or not last_ports:
+    if not scan_completed:
         return "<h2>No completed scan available.</h2>"
 
     pdf = generate_report(

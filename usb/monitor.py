@@ -6,7 +6,7 @@ import subprocess
 import glob
 
 from usb.usb_scanner import scan_usb
-from scanner.database import save_usb_scan
+from scanner.database import save_usb_scan, log_xdr_event
 
 usb_connected = False
 last_results = []
@@ -21,6 +21,8 @@ MOUNT_DIR = "/media/root/USB"
 CHECK_INTERVAL = 2
 
 current_device = None
+last_logged_device = None
+last_logged_scan_time = 0
 
 
 
@@ -98,6 +100,8 @@ def monitor_usb():
     global last_risk
     global latest_scan
     global current_device
+    global last_logged_device
+    global last_logged_scan_time
 
     print("=" * 60)
     print("CyberShield Enterprise XDR USB Monitor Started")
@@ -134,6 +138,60 @@ def monitor_usb():
                     last_results
                 )
 
+                # Log USB activity into the XDR event system
+                infected_count = sum(
+                    1
+                    for item in last_results
+                    if str(item.get("status", "")).upper() == "INFECTED"
+                )
+
+                suspicious_count = sum(
+                    1
+                    for item in last_results
+                    if str(item.get("status", "")).upper() == "SUSPICIOUS"
+                )
+
+                device_name = os.path.basename(device)
+                now = time.time()
+
+                # Prevent duplicate XDR events
+                duplicate_event = (
+                    device_name == last_logged_device
+                    and (now - last_logged_scan_time) < 60
+                )
+
+                if not duplicate_event:
+
+                    if infected_count > 0:
+                        log_xdr_event(
+                            "USB_THREAT_DETECTED",
+                            "CRITICAL",
+                            "USB Scanner",
+                            f"USB {device_name}: "
+                            f"{infected_count} infected files detected"
+                        )
+
+                    elif suspicious_count > 0:
+                        log_xdr_event(
+                            "USB_SUSPICIOUS_ACTIVITY",
+                            "HIGH",
+                            "USB Scanner",
+                            f"USB {device_name}: "
+                            f"{suspicious_count} suspicious files detected"
+                        )
+
+                    else:
+                        log_xdr_event(
+                            "USB_SCAN_COMPLETED",
+                            "INFO",
+                            "USB Scanner",
+                            f"USB {device_name}: "
+                            f"{len(last_results)} files scanned, no threats detected"
+                        )
+
+                    last_logged_device = device_name
+                    last_logged_scan_time = now
+
                 # Automatically generate PDF report
                 pdf_file = generate_usb_report(
                     os.path.basename(device),
@@ -169,3 +227,6 @@ def start_monitor():
     )
 
     thread.start()
+
+if __name__ == "__main__":
+    monitor_usb()

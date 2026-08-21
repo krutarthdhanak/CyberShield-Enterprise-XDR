@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 def grab_banner(ip, port):
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(2)
+        s.settimeout(1)
         s.connect((ip, port))
 
         if port in [80, 8080]:
@@ -27,7 +27,7 @@ def grab_banner(ip, port):
 def scan_single_port(target_ip, port):
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.settimeout(0.5)
+    s.settimeout(0.25)
 
     result = s.connect_ex((target_ip, port))
 
@@ -88,7 +88,7 @@ def scan_ports(target, start_port, end_port):
 
     port_range = range(start_port, end_port + 1)
 
-    with ThreadPoolExecutor(max_workers=20) as executor:
+    with ThreadPoolExecutor(max_workers=50) as executor:
 
         results = executor.map(
             lambda port: scan_single_port(target_ip, port),
